@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "targets": [
+      "capital"
+    ],
+    "ignore": [],
+    "source": "functions"
+  },
+  "client": {
+    "source": "client"
+  }
+}

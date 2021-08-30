@@ -1,0 +1,29 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "8253000000028001",
+      "name": "PagoACapital",
+      "domain": {
+        "id": 10031831122,
+        "name": "pagoacapital-755070814.development"
+      },
+      "env": [
+        {
+          "idx": 1,
+          "id": "755070814",
+          "name": "Development",
+          "type": 3
+        }
+      ]
+    }
+  ]
+}

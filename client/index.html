@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Pago a Capital | GRUPO CONCORDIA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Pago a Capital | Grupo Concordia</h1>
+      <div id="facturas-container" class="facturas"></div>
+
+      <div class="form-pago">
+        <form action="/server/pagos_capital/realizarPago" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="pago"
+              >Ingresar monto de pago a Capital</label
+            >
+            <input class="form-input" type="number" name="pago" id="pago" />
+          </div>
+          <input
+            id="submit-pago"
+            type="submit"
+            class="btn"
+            value="Realizar Pago"
+          />
+        </form>
+      </div>
+
+      <button onclick="pruebaResp()">Prueba</button>
+    </div>
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.js"
+      integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+      crossorigin="anonymous"
+    ></script>
+    <script src="main.js"></script>
+  </body>
+</html>
