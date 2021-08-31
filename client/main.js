@@ -1,3 +1,12 @@
+const tabla = document.querySelector('.detalle-facturas')
+
+fetch('./facturas.json')
+  .then((response) => response.json())
+  .then((data) => {
+    document.querySelector('.nombre-cliente').innerText = data[0].customer_name
+    document.querySelector('.lote-cliente').innerText =
+      data[0].zcrm_potential_name
+  })
 const divFacturas = document.querySelector('#facturas-container')
 const formatPrice = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -5,15 +14,99 @@ const formatPrice = new Intl.NumberFormat('en-US', {
 })
 const submit = document.querySelector('#submit-pago')
 let primerNoPagada = {}
-let customer_name, item_name, item_id, idsInvoices
 
-const getData = async () => {
-  const resps = await getInfoFromBooks()
-  customer_name = resps[0].contact.contact_name
-  item_name = resps[1].name
-  item_id = resps[1].item_id
-  return [customer_name, item_name]
+// fetch('/server/pagos_capital/getInvoices')
+function DatosTabla() {
+  fetch('./facturas.json').then((resp) => {
+    if (resp.status === 200) {
+      resp.json().then((data) => {
+        let facturas = new DocumentFragment()
+        data.forEach((factura) => {
+          // console.log(factura.invoice_id)
+          if (!factura.reference_number.includes('GC')) {
+            const divFactura = document.createElement('tr')
+            tabla.appendChild(divFactura)
+            //Fecha
+            const spanFecha = document.createElement('td')
+            spanFecha.textContent = factura.date
+            divFactura.append(spanFecha)
+            //Descripcion
+            const spanDesc = document.createElement('td')
+            spanDesc.textContent = factura.reference_number
+            divFactura.classList.add('factura')
+            divFactura.setAttribute('data-invoiceid', factura.invoice_id)
+            divFactura.append(spanDesc)
+            //Cantidad
+            const spanPrecio = document.createElement('td')
+            spanPrecio.textContent = formatPrice.format(factura.total)
+            divFactura.append(spanPrecio)
+            //Interes
+            const spanInteres = document.createElement('td')
+            spanInteres.textContent = factura.total
+            spanInteres.textContent = formatPrice.format(factura.total)
+            divFactura.append(spanInteres)
+            //Capital
+            const spanCapital = document.createElement('td')
+            spanCapital.textContent = factura.total
+            spanCapital.textContent = formatPrice.format(factura.total)
+            divFactura.append(spanCapital)
+            //Estado
+            const spanEstado = document.createElement('td')
+            const divEstatus = document.createElement('div')
+            divEstatus.textContent = factura.status
+            divFactura.append(spanEstado)
+            if (factura.status == 'paid') {
+              divEstatus.classList.add('paid')
+            } else if (factura.status == 'partially_paid') {
+              divEstatus.classList.add('partially-paid')
+            } else if (factura.status == 'sent') {
+              divEstatus.classList.add('sent')
+            }
+            spanEstado.append(divEstatus)
+          }
+          //Alertas
+          // boton = document.querySelector('.boton');
+          // boton.addEventListener('click', () => {
+          //     currentAlert = document.getElementsByClassName('alert');
+          //     if(factura.status == 'paid'){
+          //         if(currentAlert.length == 0) {
+          //             showAlert('success', 'Pago Realizado con Exito');
+          //         } else {
+          //         currentAlert[0].remove();
+          //         }
+          //     }
+          //     if(factura.status == 'partially_paid'){
+          //         if(currentAlert.length == 0) {
+          //             showAlert('warning', 'Existen facturas parcialmente pagadas');
+          //         } else {
+          //         currentAlert[0].remove();
+          //         }
+          //     }
+          //     if(currentAlert.length == 0) {
+          //             showAlert('danger', 'Lo sentimos, no se pueden mostrar las facturas');
+          //             } else {
+          //             currentAlert[0].remove();
+          //             }
+
+          // });
+        })
+
+        primerNoPagada = data.find(
+          (fact) =>
+            fact.status == 'sent' && !fact.reference_number.includes('GC')
+        )
+        divFacturas.append(facturas)
+      })
+    }
+  })
 }
+DatosTabla()
+
+submit.addEventListener('click', (e) => {
+  e.preventDefault()
+  console.log(JSON.stringify(crearFactura()))
+  alert(JSON.stringify(crearFactura()))
+})
 
 const crearFactura = () => {
   const montoFactura = document.querySelector('#pago').value
@@ -29,7 +122,7 @@ const crearFactura = () => {
     line_items: [
       {
         rate: montoFactura,
-        item_id: item_id,
+        item_id: 123123124,
         description: desc,
         quantity: 1,
       },
@@ -39,154 +132,46 @@ const crearFactura = () => {
         label: 'TipoProducto',
         value: 'Casa',
       },
+      {
+        label: 'Capital',
+        value: montoFactura,
+      },
+      {
+        label: 'Interes',
+        value: 0,
+      },
     ],
   }
 }
 
-const pruebaResp = () => {
-  // const idContacto = '888587000033680404'
-  // fetch(`/server/capital/books/getContacto/${idContacto}`)
-  //   .then((resp) => resp.json())
-  //   .then((data) => {
-  //     console.log(data)
-  //   })
-  getData().then((resp) => {
-    let [nombre, prod] = resp
-    console.log(`nombre: ${nombre} item: ${prod}`)
-    console.log(item_id)
-  })
+function closeAlert(e) {
+  e.target.parentNode.classList.toggle('closed')
+  setTimeout(function () {
+    e.target.parentNode.remove()
+  }, 650)
 }
 
-const getInfoFromBooks = async () => {
-  const idContacto = '888587000033680404'
-  const idItem = '888587000011266039'
-  const responses = await Promise.all([
-    fetch(`/server/capital/books/getContacto/${idContacto}`),
-    fetch(`/server/capital/books/getItemById/${idItem}`),
-  ])
+function showAlert(status, msg) {
+  const alert = document.createElement('div')
+  alert.style.display = 'block'
+  alert.className = `alert ${status}`
 
-  const dataPromises = responses.map((result) => result.json())
+  container = document.querySelector('body')
+  message = document.createElement('div')
+  message.className = 'message'
+  message.innerText = msg
+  alert.appendChild(message)
+  close = document.createElement('span')
+  close.className = 'alert-close'
+  close.innerHTML = `&#10006;`
+  close.addEventListener('click', closeAlert)
+  alert.appendChild(close)
+  container.appendChild(alert)
 
-  return await Promise.all(dataPromises)
+  setTimeout(function () {
+    alert.classList.toggle('show')
+  }, 100)
+  setTimeout(function () {
+    alert.style.transition = 'opacity 500ms'
+  }, 800)
 }
-
-const getInvoices = () => {
-  getData().then((resp) => {
-    let [customer_name, item_name] = resp
-
-    fetch(
-      `/server/capital/books/getInvoices/${customer_name}&${item_name}`
-    ).then((resp) => {
-      if (resp.status === 200) {
-        resp.json().then((data) => {
-          console.log(data.length)
-          idsInvoices = data
-            .filter((factura) => {
-              if (
-                !factura.reference_number.includes('GC') ||
-                !factura.reference_number.includes('GCC')
-              ) {
-                if (factura.status == 'sent') {
-                  return factura
-                } else if (factura.status == 'overdue') {
-                  if (factura.balance == factura.total) {
-                    return factura
-                  }
-                }
-              }
-            })
-            .map((factura) => {
-              return [factura.invoice_id, factura.reference_number]
-            })
-          console.log(idsInvoices)
-          let facturas = new DocumentFragment()
-          data.forEach((factura) => {
-            // console.log(factura.invoice_id)
-            if (!factura.reference_number.includes('GC')) {
-              const divFactura = document.createElement('DIV')
-              divFactura.textContent = factura.reference_number
-              divFactura.classList.add('factura')
-              divFactura.setAttribute('data-invoiceid', factura.invoice_id)
-              if (factura.status == 'paid') {
-                divFactura.classList.add('paid')
-              } else if (factura.status == 'partially_paid') {
-                divFactura.classList.add('partially-paid')
-              }
-              const spanPrecio = document.createElement('span')
-              spanPrecio.textContent = formatPrice.format(factura.total)
-              spanPrecio.classList.add('invoice-price')
-              divFactura.append(spanPrecio)
-              facturas.append(divFactura)
-            }
-          })
-
-          primerNoPagada = data.find(
-            (fact) =>
-              fact.status == 'sent' && !fact.reference_number.includes('GC')
-          )
-          divFacturas.append(facturas)
-        })
-      }
-    })
-  })
-}
-
-getInvoices()
-
-// fetch('./facturas.json').then((resp) => {
-//   if (resp.status === 200) {
-//     resp.json().then((data) => {
-//       let facturas = new DocumentFragment()
-//       data.forEach((factura) => {
-//         // console.log(factura.invoice_id)
-//         if (!factura.reference_number.includes('GC')) {
-//           const divFactura = document.createElement('DIV')
-//           divFactura.textContent = factura.reference_number
-//           divFactura.classList.add('factura')
-//           divFactura.setAttribute('data-invoiceid', factura.invoice_id)
-//           if (factura.status == 'paid') {
-//             divFactura.classList.add('paid')
-//           } else if (factura.status == 'partially_paid') {
-//             divFactura.classList.add('partially-paid')
-//           }
-//           const spanPrecio = document.createElement('span')
-//           spanPrecio.textContent = formatPrice.format(factura.total)
-//           spanPrecio.classList.add('invoice-price')
-//           divFactura.append(spanPrecio)
-//           facturas.append(divFactura)
-//         }
-//       })
-
-//       primerNoPagada = data.find(
-//         (fact) => fact.status == 'sent' && !fact.reference_number.includes('GC')
-//       )
-//       divFacturas.append(facturas)
-//     })
-//   }
-// })
-
-submit.addEventListener('click', (e) => {
-  e.preventDefault()
-  console.log(JSON.stringify(crearFactura()))
-  fetch('/server/capital/books/createInvoice', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // 'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: JSON.stringify(crearFactura()),
-  })
-    .then((resp) => {
-      if (resp.status === 200) {
-        resp.json().then((data) => {
-          // Factura creada, poner factura en estado enviado
-          const invoice_id = data.invoice.invoice_id
-          fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
-            .then((resp) => resp.json())
-            .then((data) => alert(JSON.stringify(data)))
-            .catch((error) => console.log(error))
-        })
-      }
-    })
-    .catch((error) => console.log(error))
-})
