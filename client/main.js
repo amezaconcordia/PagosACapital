@@ -5,7 +5,7 @@ const formatPrice = new Intl.NumberFormat('en-US', {
 })
 const submit = document.querySelector('#submit-pago')
 let primerNoPagada = {}
-let customer_name, item_name, item_id
+let customer_name, item_name, item_id, idsInvoices
 
 const getData = async () => {
   const resps = await getInfoFromBooks()
@@ -80,6 +80,25 @@ const getInvoices = () => {
       if (resp.status === 200) {
         resp.json().then((data) => {
           console.log(data.length)
+          idsInvoices = data
+            .filter((factura) => {
+              if (
+                !factura.reference_number.includes('GC') ||
+                !factura.reference_number.includes('GCC')
+              ) {
+                if (factura.status == 'sent') {
+                  return factura
+                } else if (factura.status == 'overdue') {
+                  if (factura.balance == factura.total) {
+                    return factura
+                  }
+                }
+              }
+            })
+            .map((factura) => {
+              return [factura.invoice_id, factura.reference_number]
+            })
+          console.log(idsInvoices)
           let facturas = new DocumentFragment()
           data.forEach((factura) => {
             // console.log(factura.invoice_id)
