@@ -60,7 +60,7 @@ router.get('/getContacto/:id', async (req, res) => {
 router.get('/eliminarFacturas', async (req, res) => {
   const config = {
     method: 'get',
-    url: `https://www.zohoapis.com/crm/v2/functions/testapi/actions/execute?auth_type=apikey&zapikey=1003.6c8cc5ee83800cb0356fcde1276dd5f4.feebc46f71c98145097630dca0fa0b05`,
+    url: `https://www.zohoapis.com/crm/v2/functions/testapi/actions/execute?auth_type=apikey&zapikey=${process.env.CF_BORRARFACTURAS}`,
     params: {
       customer_name: req.query.customer_name,
       item_name: req.query.item_name,
