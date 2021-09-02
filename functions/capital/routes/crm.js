@@ -67,7 +67,7 @@ router.get('/eliminarFacturas', async (req, res) => {
       masFacturas: true,
     },
   }
-  console.log(config)
+
   try {
     const resp = await axios(config)
     res.send(resp.data)
