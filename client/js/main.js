@@ -79,6 +79,26 @@ const DatosTabla = async () => {
               fact.status == 'sent' && !fact.reference_number.includes('GC')
           )
 
+          // Obtener facturas para eliminar
+          idsInvoices = data
+            .filter((factura) => {
+              if (
+                !factura.reference_number.includes('GC') ||
+                !factura.reference_number.includes('GCC')
+              ) {
+                if (factura.status == 'sent') {
+                  return factura
+                } else if (factura.status == 'overdue') {
+                  if (factura.balance == factura.total) {
+                    return factura
+                  }
+                }
+              }
+            })
+            .map((factura) => {
+              return factura.invoice_id
+            })
+          console.log(idsInvoices)
           // Agregar facturas a html
           divFacturas.append(facturas)
           $('.loader-wrapper').fadeOut('slow')
@@ -132,6 +152,10 @@ const crearFactura = () => {
       {
         label: 'TipoProducto',
         value: 'Casa',
+      },
+      {
+        label: 'Pago a Capital',
+        value: true,
       },
     ],
   }
