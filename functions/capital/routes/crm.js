@@ -58,17 +58,17 @@ router.get('/getContacto/:id', async (req, res) => {
 
 // custom function - testApi
 router.get('/eliminarFacturas', async (req, res) => {
-  const config = {
-    method: 'get',
-    url: `https://www.zohoapis.com/crm/v2/functions/testapi/actions/execute?auth_type=apikey&zapikey=${process.env.CF_BORRARFACTURAS}`,
-    params: {
-      customer_name: req.query.customer_name,
-      item_name: req.query.item_name,
-      masFacturas: true,
-    },
-  }
-
   try {
+    const config = {
+      method: 'get',
+      url: `https://www.zohoapis.com/crm/v2/functions/testapi/actions/execute?auth_type=apikey&zapikey=${process.env.CF_BORRARFACTURAS}`,
+      params: {
+        customer_name: req.query.customer_name,
+        item_name: req.query.item_name,
+        masFacturas: true,
+      },
+    }
+
     const resp = await axios(config)
     res.send(resp.data)
   } catch (error) {

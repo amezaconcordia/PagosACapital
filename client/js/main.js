@@ -31,6 +31,14 @@ const DatosTabla = async () => {
           data.forEach((factura) => {
             // console.log(factura.invoice_id)
             if (!factura.reference_number.includes('GC')) {
+              // const capital = factura.custom_fields.find(
+              //   (cf) => cf.label === 'Capital'
+              // )
+              // const interes = factura.custom_fields.find(
+              //   (cf) => cf.label === 'Interes'
+              // )
+              const capital = { value: 100 }
+              const interes = { value: 300 }
               const divFactura = document.createElement('tr')
               tabla.appendChild(divFactura)
               //Fecha
@@ -50,12 +58,16 @@ const DatosTabla = async () => {
               //Interes
               const spanInteres = document.createElement('td')
               spanInteres.textContent = factura.total
-              spanInteres.textContent = formatPrice.format(factura.total)
+              spanInteres.textContent = formatPrice.format(
+                parseFloat(interes.value)
+              )
               divFactura.append(spanInteres)
               //Capital
               const spanCapital = document.createElement('td')
               spanCapital.textContent = factura.total
-              spanCapital.textContent = formatPrice.format(factura.total)
+              spanCapital.textContent = formatPrice.format(
+                parseFloat(capital.value)
+              )
               divFactura.append(spanCapital)
               //Estado
               const spanEstado = document.createElement('td')
@@ -157,6 +169,14 @@ const crearFactura = () => {
         label: 'Pago a Capital',
         value: true,
       },
+      {
+        label: 'Capital',
+        value: document.querySelector('#pago').value,
+      },
+      {
+        label: 'Interes',
+        value: 0,
+      },
     ],
   }
 }
@@ -167,7 +187,7 @@ DatosTabla()
 // Event listeners
 submit.addEventListener('click', (e) => {
   e.preventDefault()
-  console.log(JSON.stringify(crearFactura()))
+  // console.log(JSON.stringify(crearFactura()))
   fetch('/server/capital/books/createInvoice', {
     method: 'POST',
     headers: {
@@ -178,17 +198,32 @@ submit.addEventListener('click', (e) => {
   })
     .then((resp) => {
       if (resp.status === 200) {
-        resp.json().then((data) => {
-          // Factura creada, poner factura en estado enviado
-          const invoice_id = data.invoice.invoice_id
-          fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
-            .then((resp) => resp.json())
-            .then((data) =>
-              util.showAlert('success', JSON.stringify(data.message))
+        let masFacturas = true
+        resp
+          .json()
+          .then((data) => {
+            // Factura creada, poner factura en estado enviado
+            const invoice_id = data.invoice.invoice_id
+            fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
+              .then((resp) => resp.json())
+              .then((data) => {
+                console.log('creo factura...')
+                util.showAlert('success', JSON.stringify(data.message))
+              })
+              .catch((error) => util.showAlert('danger', JSON.stringify(error)))
+          })
+          .then((resp) => {
+            // Eliminar facturas
+            fetch(
+              `/server/capital/crm/eliminarFacturas?customer_name=${customer_name}&item_name=${item_name}&masFacturas=${masFacturas}`
             )
-            .catch((error) => util.showAlert('danger', JSON.stringify(error)))
-        })
+              .then((resp) => resp.json())
+              .then((data) => {
+                util.showAlert('success', JSON.stringify(data.details.output))
+              })
+              .catch((error) => util.showAlert('danger', error))
+          })
       }
     })
-    .catch((error) => console.log(error))
+    .catch((error) => util.showAlert('danger', JSON.stringify(error)))
 })
