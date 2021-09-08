@@ -4,13 +4,20 @@ import * as util from './util.js'
 const tabla = document.querySelector('.detalle-facturas')
 // document.querySelector('.nombre-cliente').innerText = data[0].customer_name
 // document.querySelector('.lote-cliente').innerText = data[0].zcrm_potential_name
+let pagadoCapital = 0
 const divFacturas = document.querySelector('#facturas-container')
 const formatPrice = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 })
 const submit = document.querySelector('#submit-pago')
-let primerNoPagada, customer_name, item_name, item_id, idsInvoices
+let primerNoPagada,
+  customer_name,
+  item_name,
+  item_id,
+  idsInvoices,
+  consecutivo,
+  plazo
 
 // Function declarations
 const DatosTabla = async () => {
@@ -31,14 +38,12 @@ const DatosTabla = async () => {
           data.forEach((factura) => {
             // console.log(factura.invoice_id)
             if (!factura.reference_number.includes('GC')) {
-              // const capital = factura.custom_fields.find(
-              //   (cf) => cf.label === 'Capital'
-              // )
-              // const interes = factura.custom_fields.find(
-              //   (cf) => cf.label === 'Interes'
-              // )
-              const capital = { value: 100 }
-              const interes = { value: 300 }
+              const capital = factura.custom_fields.find(
+                (cf) => cf.label === 'Capital'
+              )
+              const interes = factura.custom_fields.find(
+                (cf) => cf.label === 'Interes'
+              )
               const divFactura = document.createElement('tr')
               tabla.appendChild(divFactura)
               //Fecha
@@ -75,8 +80,12 @@ const DatosTabla = async () => {
               divEstatus.textContent = factura.status
               divFactura.append(spanEstado)
               if (factura.status == 'paid') {
+                // Saber cuanto tiene pagado a Capital
+                pagadoCapital = pagadoCapital + capital.value
                 divEstatus.classList.add('paid')
               } else if (factura.status == 'partially_paid') {
+                // Calcular cuando pago parcial tiene y sumarlo
+                // P E N D I E N T E
                 divEstatus.classList.add('partially-paid')
               } else if (factura.status == 'sent') {
                 divEstatus.classList.add('sent')
@@ -91,7 +100,16 @@ const DatosTabla = async () => {
               fact.status == 'sent' && !fact.reference_number.includes('GC')
           )
 
+          // Get Consecutivo actual
+          consecutivo = parseInt(primerNoPagada.reference_number.split(' ')[0])
+          console.log('Consecutivo: ', consecutivo)
+
+          // Get plazo
+          plazo = parseInt(primerNoPagada.reference_number.split(' ')[2])
+          console.log('Plazo: ', plazo)
+
           // Obtener facturas para eliminar
+          /*
           idsInvoices = data
             .filter((factura) => {
               if (
@@ -111,6 +129,8 @@ const DatosTabla = async () => {
               return factura.invoice_id
             })
           console.log(idsInvoices)
+          */
+          console.log('Pagado a capital', pagadoCapital)
           // Agregar facturas a html
           divFacturas.append(facturas)
           $('.loader-wrapper').fadeOut('slow')
@@ -181,12 +201,74 @@ const crearFactura = () => {
   }
 }
 
+const creatorRecord = async (record_id) => {
+  // console.log(primerNoPagada)
+  const creator_resp = await fetch(
+    `/server/capital/creator/searchRecord/${record_id}`
+  )
+  const creator_record = creator_resp.json()
+  return await creator_record
+}
+
+const getDatosCreator = async () => {
+  const record = await creatorRecord(38)
+  // console.log(await record)
+  let amortizacion = JSON.parse(`[${record.JSON_Amortizacion}]`)
+  console.log(amortizacion)
+  console.log('Consecutivo actual', consecutivo)
+  let pagoActual = amortizacion.find((f) => f.Consecutivo == consecutivo)
+  return {
+    saldoInicial: pagoActual.SaldoInicial,
+    id: record.ID,
+  }
+}
+
 // script
 DatosTabla()
 
 // Event listeners
-submit.addEventListener('click', (e) => {
+/*
+submit.addEventListener('click', async (e) => {
   e.preventDefault()
+  const montoCapital = parseFloat(document.querySelector('#pago').value)
+  console.log('Monto Capital: ', montoCapital)
+  // Actualizar reporte
+  try {
+    const datos = await getDatosCreator()
+    console.log(datos)
+    let nuevoSaldoInicial = datos.saldoInicial - montoCapital
+    console.log('nuevo saldo inicial', nuevoSaldoInicial)
+    const updateRegistro = fetch(
+      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
+    )
+    const updateResp = (await updateRegistro).json()
+    console.log(await updateResp)
+  } catch (error) {
+    util.showAlert('danger', JSON.stringify(error))
+  }
+})
+*/
+submit.addEventListener('click', async (e) => {
+  e.preventDefault()
+  const montoCapital = parseFloat(document.querySelector('#pago').value)
+  console.log('Monto Capital: ', montoCapital)
+  // Actualizar reporte
+  try {
+    const datos = await getDatosCreator()
+    console.log(datos)
+    let nuevoSaldoInicial = datos.saldoInicial - montoCapital
+    console.log('nuevo saldo inicial', nuevoSaldoInicial)
+    const updateRegistro = fetch(
+      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
+    )
+    const updateResp = (await updateRegistro).json()
+    console.log(await updateResp)
+    util.showAlert('success', JSON.stringify(await updateResp))
+  } catch (error) {
+    util.showAlert('danger', JSON.stringify(await error))
+    console.log(error)
+  }
+
   // console.log(JSON.stringify(crearFactura()))
   fetch('/server/capital/books/createInvoice', {
     method: 'POST',
@@ -199,19 +281,18 @@ submit.addEventListener('click', (e) => {
     .then((resp) => {
       if (resp.status === 200) {
         let masFacturas = true
-        resp
-          .json()
-          .then((data) => {
-            // Factura creada, poner factura en estado enviado
-            const invoice_id = data.invoice.invoice_id
-            fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
-              .then((resp) => resp.json())
-              .then((data) => {
-                console.log('creo factura...')
-                util.showAlert('success', JSON.stringify(data.message))
-              })
-              .catch((error) => util.showAlert('danger', JSON.stringify(error)))
-          })
+        resp.json().then((data) => {
+          // Factura creada, poner factura en estado enviado
+          const invoice_id = data.invoice.invoice_id
+          fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
+            .then((resp) => resp.json())
+            .then((data) => {
+              console.log('creo factura...')
+              util.showAlert('success', JSON.stringify(data.message))
+            })
+            .catch((error) => util.showAlert('danger', JSON.stringify(error)))
+        })
+        /*
           .then((resp) => {
             // Eliminar facturas
             fetch(
@@ -223,6 +304,7 @@ submit.addEventListener('click', (e) => {
               })
               .catch((error) => util.showAlert('danger', error))
           })
+          */
       }
     })
     .catch((error) => util.showAlert('danger', JSON.stringify(error)))

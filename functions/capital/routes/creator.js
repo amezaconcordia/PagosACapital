@@ -61,4 +61,28 @@ router.post('/updateRecord/:id', async (req, res) => {
   }
 })
 
+// Get registro por Folio
+router.get('/searchRecord/:folio', async (req, res) => {
+  // obtener access token
+  const accessToken = await catalystToken(req)
+
+  // Config para axios
+  const config = {
+    method: 'get',
+    url: `https://creator.zoho.com/api/v2/sistemas134/cotizadorgc/report/Presupuesto_Report?Folio=${req.params.folio}`,
+    headers: {
+      Authorization: `Zoho-oauthtoken ${accessToken}`,
+    },
+  }
+
+  // Realizar peticion con Axios
+  try {
+    const resp = await axios(config)
+    // console.log(resp.data.data[0])
+    res.json(resp.data.data[0])
+  } catch (error) {
+    console.log(error)
+  }
+})
+
 module.exports = router
