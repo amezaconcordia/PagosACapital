@@ -15,6 +15,7 @@ let primerNoPagada,
   customer_name,
   item_name,
   item_id,
+  id_Creator,
   idsInvoices,
   consecutivo,
   plazo
@@ -165,13 +166,13 @@ const crearFactura = () => {
   const montoFactura = document.querySelector('#pago').value
   console.log('primerNOpagada', primerNoPagada)
   const refSplit = primerNoPagada.reference_number.split(' ')
-  const desc = `Pago por Concepto de Mensualidad ${refSplit[0]} de ${refSplit[2]} de ${refSplit[4]} ${refSplit[5]} ${refSplit[6]}`
+  const desc = `Pago a Capital de Consecutivo ${refSplit[0]} de ${refSplit[4]} ${refSplit[5]} ${refSplit[6]}`
 
   return {
     customer_id: primerNoPagada.customer_id,
     zcrm_potential_id: primerNoPagada.zcrm_potential_id,
     date: primerNoPagada.date,
-    reference_number: primerNoPagada.reference_number,
+    reference_number: `Capital ${refSplit[0]} de ${refSplit[4]} ${refSplit[5]} ${refSplit[6]}`,
     line_items: [
       {
         rate: montoFactura,
@@ -211,15 +212,102 @@ const creatorRecord = async (record_id) => {
 }
 
 const getDatosCreator = async () => {
-  const record = await creatorRecord(38)
+  const record = await creatorRecord(39)
   // console.log(await record)
   let amortizacion = JSON.parse(`[${record.JSON_Amortizacion}]`)
   console.log(amortizacion)
   console.log('Consecutivo actual', consecutivo)
   let pagoActual = amortizacion.find((f) => f.Consecutivo == consecutivo)
+  id_Creator = record.ID
   return {
     saldoInicial: pagoActual.SaldoInicial,
     id: record.ID,
+  }
+}
+
+// @ Operacion Actualizar Reporte Creator
+const actualizarReporte = async () => {
+  const montoCapital = parseFloat(document.querySelector('#pago').value)
+  console.log('Monto Capital: ', montoCapital)
+  // Actualizar reporte
+  try {
+    const datos = await getDatosCreator()
+    console.log(datos)
+    let nuevoSaldoInicial = datos.saldoInicial - montoCapital
+    console.log('nuevo saldo inicial', nuevoSaldoInicial)
+    const updateRegistro = fetch(
+      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
+    )
+    return await (await updateRegistro).json()
+  } catch (error) {
+    return error
+  }
+}
+
+// @ Operacion Crear Factura Books
+const crearFacturaBooks = async () => {
+  {
+    try {
+      const invoice = fetch('/server/capital/books/createInvoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: JSON.stringify(crearFactura()),
+      })
+
+      return await (await invoice).json()
+    } catch (error) {
+      return error
+    }
+  }
+}
+
+// @ Operacion Enviar Factura
+const enviarFactura = async (invoice_id) => {
+  try {
+    const enviar = fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
+    return await (await enviar).json()
+  } catch (error) {
+    return error
+  }
+}
+
+// @ Operacion Eliminar Facturas
+const eliminarFacturas = async () => {
+  try {
+    const eliminar = fetch(
+      `/server/capital/crm/eliminarFacturas?customer_name=${customer_name}&item_name=${item_name}&masFacturas=true`
+    )
+    return await (await eliminar).json()
+  } catch (error) {
+    return error
+  }
+}
+
+// @ Operacion Creacion Facturas
+const creacionInvoices = async (
+  oportunidad,
+  cliente,
+  producto,
+  presupuesto,
+  size
+) => {
+  try {
+    /* 
+        IDOportunidad: req.query.IDOportunidad,
+        IDClienteBooks: req.query.IDClienteBooks,
+        IDProductoBooks: req.query.IDProductoBooks,
+        IDPresupuesto: req.query.IDPresupuesto,
+        size: req.query.size,
+    */
+    const creacion = fetch(
+      `/server/capital/crm/creacionMasiva?IDOportunidad=${oportunidad}&IDClienteBooks=${cliente}&IDProductoBooks=${producto}&IDPresupuesto=${presupuesto}&size=${size}`
+    )
+    return await (await creacion).json()
+  } catch (error) {
+    return error
   }
 }
 
@@ -227,85 +315,51 @@ const getDatosCreator = async () => {
 DatosTabla()
 
 // Event listeners
-/*
+
 submit.addEventListener('click', async (e) => {
   e.preventDefault()
-  const montoCapital = parseFloat(document.querySelector('#pago').value)
-  console.log('Monto Capital: ', montoCapital)
-  // Actualizar reporte
   try {
-    const datos = await getDatosCreator()
-    console.log(datos)
-    let nuevoSaldoInicial = datos.saldoInicial - montoCapital
-    console.log('nuevo saldo inicial', nuevoSaldoInicial)
-    const updateRegistro = fetch(
-      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
-    )
-    const updateResp = (await updateRegistro).json()
-    console.log(await updateResp)
+    // Actualizar reporte
+    const actualizar = await actualizarReporte()
+    console.log(actualizar)
+    let resp = JSON.parse(actualizar.details.output)
+    console.log(resp)
+    util.showAlert('success', JSON.stringify(resp.data.message))
+
+    if (resp.code == 0) {
+      console.log('Actualizo el registro')
+      let size = resp.data.sizemap
+
+      // Crear factura
+      const invoiceResp = await crearFacturaBooks()
+      const invoice_id = invoiceResp.invoice.invoice_id
+      util.showAlert('success', JSON.stringify(invoiceResp.message))
+
+      /*
+      // Enviar factura
+      const enviar = await enviarFactura(invoice_id)
+      console.log(enviar)
+      util.showAlert('success', JSON.stringify(enviar.message))
+
+      // Eliminar facturas
+      const eliminar = await eliminarFacturas()
+      console.log(eliminar)
+      util.showAlert('success', JSON.stringify(eliminar.details.output))
+
+      // Creacion Masiva
+      const creacionMasiva = await creacionInvoices(
+        '2234337000105397015',
+        '888587000033680404',
+        item_id,
+        id_Creator,
+        size
+      )
+      console.log(creacionMasiva)
+      util.showAlert('success', JSON.stringify(creacionMasiva))
+      */
+    }
   } catch (error) {
+    console.log(error)
     util.showAlert('danger', JSON.stringify(error))
   }
-})
-*/
-submit.addEventListener('click', async (e) => {
-  e.preventDefault()
-  const montoCapital = parseFloat(document.querySelector('#pago').value)
-  console.log('Monto Capital: ', montoCapital)
-  // Actualizar reporte
-  try {
-    const datos = await getDatosCreator()
-    console.log(datos)
-    let nuevoSaldoInicial = datos.saldoInicial - montoCapital
-    console.log('nuevo saldo inicial', nuevoSaldoInicial)
-    const updateRegistro = fetch(
-      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
-    )
-    const updateResp = (await updateRegistro).json()
-    console.log(await updateResp)
-    util.showAlert('success', JSON.stringify(await updateResp))
-  } catch (error) {
-    util.showAlert('danger', JSON.stringify(await error))
-    console.log(error)
-  }
-
-  // console.log(JSON.stringify(crearFactura()))
-  fetch('/server/capital/books/createInvoice', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // 'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: JSON.stringify(crearFactura()),
-  })
-    .then((resp) => {
-      if (resp.status === 200) {
-        let masFacturas = true
-        resp.json().then((data) => {
-          // Factura creada, poner factura en estado enviado
-          const invoice_id = data.invoice.invoice_id
-          fetch(`/server/capital/books/sendInvoice/${invoice_id}`)
-            .then((resp) => resp.json())
-            .then((data) => {
-              console.log('creo factura...')
-              util.showAlert('success', JSON.stringify(data.message))
-            })
-            .catch((error) => util.showAlert('danger', JSON.stringify(error)))
-        })
-        /*
-          .then((resp) => {
-            // Eliminar facturas
-            fetch(
-              `/server/capital/crm/eliminarFacturas?customer_name=${customer_name}&item_name=${item_name}&masFacturas=${masFacturas}`
-            )
-              .then((resp) => resp.json())
-              .then((data) => {
-                util.showAlert('success', JSON.stringify(data.details.output))
-              })
-              .catch((error) => util.showAlert('danger', error))
-          })
-          */
-      }
-    })
-    .catch((error) => util.showAlert('danger', JSON.stringify(error)))
 })

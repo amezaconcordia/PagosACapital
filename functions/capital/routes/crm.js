@@ -98,4 +98,50 @@ router.get('/calcularAmortizacion', async (req, res) => {
   }
 })
 
+// CRM creacion masiva de facturas
+router.get('/creacionMasiva', async (req, res) => {
+  console.log(req.query)
+  try {
+    const sizeMap = parseInt(req.query.size)
+    console.log(typeof sizeMap)
+    for (let i = 0; i < sizeMap; i++) {
+      const config = {
+        method: 'get',
+        url: `https://www.zohoapis.com/crm/v2/functions/creacionfacturascapital/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
+        params: {
+          IDOportunidad: req.query.IDOportunidad,
+          IDClienteBooks: req.query.IDClienteBooks,
+          IDProductoBooks: req.query.IDProductoBooks,
+          IDPresupuesto: req.query.IDPresupuesto,
+          Position: i,
+        },
+      }
+      const resp = await axios(config)
+      console.log(resp)
+    }
+    res.send('Las facturas fueron creadas')
+  } catch (error) {
+    res.status(500).send(error)
+  }
+
+  // try {
+  //   const config = {
+  //     method: 'get',
+  //     url: `https://www.zohoapis.com/crm/v2/functions/creacionfacturascapital/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
+  //     params: {
+  //       IDOportunidad: req.query.IDOportunidad,
+  //       IDClienteBooks: req.query.IDClienteBooks,
+  //       IDProductoBooks: req.query.IDProductoBooks,
+  //       IDPresupuesto: req.query.IDPresupuesto,
+  //       size: req.query.size,
+  //     },
+  //   }
+
+  //   const resp = await axios(config)
+  //   res.send(resp.data)
+  // } catch (error) {
+  //   console.log(error)
+  // }
+})
+
 module.exports = router
