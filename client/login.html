@@ -1,23 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ingresar al Sistema</title>
+    <title>Login</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link rel="stylesheet" href="css/login.css" />
   </head>
   <body>
-    <h1>Login</h1>
-    <form id="loginForm">
-      <p>Ingresa la contraseña para acceder a la aplicacion</p>
-      <p>
-        <label for="password">Contraseña:</label>
-        <input type="password" name="password" />
-      </p>
-      <p>
-        <input type="submit" value="Login" />
-      </p>
-    </form>
+    <div class="login-form" id="loginForm">
+      <form>
+        <h1>Login</h1>
+        <div class="form-group">
+          <input
+            type="text"
+            name="sector"
+            placeholder="Sector"
+            autocomplete="off"
+          />
+          <span class="input-icon"><i class="fa fa-map-marker"></i></span>
+        </div>
+        <div class="form-group">
+          <input type="password" name="password" placeholder="Contraseña" />
+          <span class="input-icon"><i class="fa fa-lock"></i></span>
+        </div>
+        <input type="submit" class="login-btn" value="Iniciar Sesión" />
+      </form>
+    </div>
     <script src="js/login.js"></script>
   </body>
 </html>

@@ -6,12 +6,13 @@ loginForm.addEventListener('submit', login)
 function login(e) {
   e.preventDefault()
   const password = e.target.password.value
+  const sector = e.target.sector.value
   e.target.reset()
 
-  const url = 'http://localhost:3000/server/capital/auth/login'
+  const url = 'http://localhost:3000/server/capital/login'
   const options = {
     method: 'POST',
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ sector, password }),
     headers: {
       'Content-Type': 'application/json',
     },
@@ -19,10 +20,7 @@ function login(e) {
 
   fetch(url, options).then((resp) => {
     if (resp.status === 200) {
-      // window.location.replace('http://localhost:3000/app/index.html')
-      fetch('/server/capital/check')
-
-      setTimeout(2000, window.location.replace(resp.url))
+      window.location.replace(resp.url)
     }
   })
   // .then((resp) => window.location.replace(resp.url))

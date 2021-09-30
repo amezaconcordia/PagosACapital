@@ -318,6 +318,7 @@ DatosTabla()
 
 submit.addEventListener('click', async (e) => {
   e.preventDefault()
+
   try {
     // Actualizar reporte
     const actualizar = await actualizarReporte()
