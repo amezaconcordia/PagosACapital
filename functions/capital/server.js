@@ -73,6 +73,8 @@ app.get('/acceso', async (req, res) => {
     .catch((err) => console.log(err))
 })
 
+// app.use('/crm', crm)
+// app.use('/books', books)
 app.use('/books', validarSession, books)
 app.use('/crm', validarSession, crm)
 app.use('/creator', validarSession, creator)

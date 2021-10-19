@@ -56,6 +56,11 @@ const DatosTabla = async () => {
               spanDesc.textContent = factura.reference_number
               divFactura.classList.add('factura')
               divFactura.setAttribute('data-invoiceid', factura.invoice_id)
+              // Consecutivo de Factura
+              let consecutivoFactura = parseInt(
+                factura.reference_number.split(' ')[0]
+              )
+              divFactura.setAttribute('data-consecutivo', consecutivoFactura)
               divFactura.append(spanDesc)
               //Cantidad
               const spanPrecio = document.createElement('td')
@@ -139,6 +144,27 @@ const DatosTabla = async () => {
       }
     }
   )
+}
+
+const crearNuebaTabla = (json_amortizacion) => {
+  console.log('Creando nueva tabla')
+  const rows = Array.from(tabla.getElementsByTagName('tr'))
+  // console.log(rows)
+  const filterFact = rows.filter((row) => row.cells[5].textContent == 'sent')
+  // console.log(filterFact)
+  filterFact.forEach((row) => {
+    let cells = row.cells
+    // console.log(cells)
+    const consecutivo = row.dataset.consecutivo
+    const factura = json_amortizacion.find((e) => e.Consecutivo == consecutivo)
+    // Actualizar Mensualidad
+    cells[2].textContent = formatPrice.format(factura.Mensualidad)
+    // Actualizar Interes
+    cells[3].textContent = formatPrice.format(factura.Interes)
+    // Actualizar Capital
+    cells[4].textContent = formatPrice.format(factura.Capital)
+  })
+  // console.log(json_amortizacion)
 }
 
 const getInfoFromBooks = async () => {
@@ -236,7 +262,7 @@ const actualizarReporte = async () => {
     let nuevoSaldoInicial = datos.saldoInicial - montoCapital
     console.log('nuevo saldo inicial', nuevoSaldoInicial)
     const updateRegistro = fetch(
-      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
+      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&factura_Inicial=${consecutivo}&factura_Final=${plazo}&Pago_capital=${montoCapital}`
     )
     return await (await updateRegistro).json()
   } catch (error) {
@@ -311,6 +337,35 @@ const creacionInvoices = async (
   }
 }
 
+// Actualizar monto con interes
+const actualizarMontoInteres = async (montoNuevo) => {
+  const myHeaders = new Headers()
+  myHeaders.append('Content-Type', 'application/json')
+
+  const raw = JSON.stringify({
+    monto: montoNuevo,
+  })
+
+  const requestOptions = {
+    method: 'PUT',
+    headers: myHeaders,
+    body: raw,
+  }
+  try {
+    const responses = await Promise.all([
+      fetch(`/server/capital/books/updateMontoItem/${item_id}`, requestOptions),
+      fetch(
+        `/server/capital/crm/updateMontoItem/2234337000028805061`,
+        requestOptions
+      ),
+    ])
+    const dataPromises = responses.map((result) => result.json())
+    const promisesResp = Promise.all(dataPromises)
+    return promisesResp
+  } catch (error) {
+    console.log(error)
+  }
+}
 // script
 DatosTabla()
 
@@ -329,14 +384,21 @@ submit.addEventListener('click', async (e) => {
 
     if (resp.code == 0) {
       console.log('Actualizo el registro')
+      crearNuebaTabla(resp.data.JSON_Amortizacion)
+      const montoNuevo = resp.data.NewMonto
+      console.log('monto nuevo', montoNuevo)
       let size = resp.data.sizemap
 
+      // Actualizar monto con Interes
+      const updateMontos = await actualizarMontoInteres(montoNuevo)
+      console.log(updateMontos)
+
       // Crear factura
+
       const invoiceResp = await crearFacturaBooks()
       const invoice_id = invoiceResp.invoice.invoice_id
       util.showAlert('success', JSON.stringify(invoiceResp.message))
 
-      /*
       // Enviar factura
       const enviar = await enviarFactura(invoice_id)
       console.log(enviar)
@@ -357,7 +419,6 @@ submit.addEventListener('click', async (e) => {
       )
       console.log(creacionMasiva)
       util.showAlert('success', JSON.stringify(creacionMasiva))
-      */
     }
   } catch (error) {
     console.log(error)

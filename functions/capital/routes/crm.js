@@ -56,6 +56,43 @@ router.get('/getContacto/:id', async (req, res) => {
   }
 })
 
+// Actualizar Monto con Interes
+router.put('/updateMontoItem/:item_id', async (req, res) => {
+  // obtener access token
+  const accessToken = await catalystToken(req)
+
+  const { monto } = req.body
+
+  //Config Axios
+  const item_id = req.params.item_id
+
+  const data = {
+    data: [
+      {
+        id: item_id,
+        Precio_con_Interes: monto.toFixed(2),
+      },
+    ],
+  }
+
+  const config = {
+    method: 'put',
+    url: `https://www.zohoapis.com/crm/v2/products/${item_id}`,
+    headers: {
+      Authorization: `Zoho-oauthtoken ${accessToken}`,
+    },
+    data: JSON.stringify(data),
+  }
+
+  // Realizar peticion con Axios
+  try {
+    const resp = await axios(config)
+    res.send(resp.data)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
 // CRM custom function - testApi
 router.get('/eliminarFacturas', async (req, res) => {
   try {
@@ -85,9 +122,9 @@ router.get('/calcularAmortizacion', async (req, res) => {
       params: {
         IDPresupuesto: req.query.IDPresupuesto,
         Monto_Inicial: req.query.Monto_Inicial,
-        Fecha_Inicial: req.query.Fecha_Inicial,
         factura_Inicial: req.query.factura_Inicial,
         factura_Final: req.query.factura_Final,
+        Pago_capital: req.query.Pago_capital,
       },
     }
 
