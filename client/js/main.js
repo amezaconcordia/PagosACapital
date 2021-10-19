@@ -366,6 +366,8 @@ const actualizarMontoInteres = async (montoNuevo) => {
     console.log(error)
   }
 }
+
+// Get params
 // script
 DatosTabla()
 
