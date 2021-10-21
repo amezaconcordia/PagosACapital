@@ -9,7 +9,7 @@ function login(e) {
   const sector = e.target.sector.value
   e.target.reset()
 
-  const url = 'http://localhost:3000/server/capital/login'
+  const url = '/server/capital/login'
   const options = {
     method: 'POST',
     body: JSON.stringify({ sector, password }),
