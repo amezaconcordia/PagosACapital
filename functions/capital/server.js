@@ -51,7 +51,6 @@ app.post('/login', (req, res) => {
 })
 
 app.post('/encrypt', async (req, res) => {
-  console.log(req.body.password)
   const salt = await bcrypt.genSalt(10)
   const hashPass = await bcrypt.hash(req.body.password, salt)
   res.send(hashPass)
@@ -73,6 +72,8 @@ app.get('/acceso', async (req, res) => {
     .catch((err) => console.log(err))
 })
 
+// app.use('/crm', crm)
+// app.use('/books', books)
 app.use('/books', validarSession, books)
 app.use('/crm', validarSession, crm)
 app.use('/creator', validarSession, creator)

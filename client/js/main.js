@@ -10,13 +10,15 @@ const formatPrice = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 })
+const queryString = window.location.search
+const urlParams = new URLSearchParams(queryString)
 const submit = document.querySelector('#submit-pago')
 let primerNoPagada,
+  record,
   customer_name,
   item_name,
   item_id,
   id_Creator,
-  idsInvoices,
   consecutivo,
   plazo
 
@@ -56,6 +58,11 @@ const DatosTabla = async () => {
               spanDesc.textContent = factura.reference_number
               divFactura.classList.add('factura')
               divFactura.setAttribute('data-invoiceid', factura.invoice_id)
+              // Consecutivo de Factura
+              let consecutivoFactura = parseInt(
+                factura.reference_number.split(' ')[0]
+              )
+              divFactura.setAttribute('data-consecutivo', consecutivoFactura)
               divFactura.append(spanDesc)
               //Cantidad
               const spanPrecio = document.createElement('td')
@@ -109,28 +116,6 @@ const DatosTabla = async () => {
           plazo = parseInt(primerNoPagada.reference_number.split(' ')[2])
           console.log('Plazo: ', plazo)
 
-          // Obtener facturas para eliminar
-          /*
-          idsInvoices = data
-            .filter((factura) => {
-              if (
-                !factura.reference_number.includes('GC') ||
-                !factura.reference_number.includes('GCC')
-              ) {
-                if (factura.status == 'sent') {
-                  return factura
-                } else if (factura.status == 'overdue') {
-                  if (factura.balance == factura.total) {
-                    return factura
-                  }
-                }
-              }
-            })
-            .map((factura) => {
-              return factura.invoice_id
-            })
-          console.log(idsInvoices)
-          */
           console.log('Pagado a capital', pagadoCapital)
           // Agregar facturas a html
           divFacturas.append(facturas)
@@ -141,9 +126,37 @@ const DatosTabla = async () => {
   )
 }
 
+const getCreatorRecord = async (id) => {
+  const creator_resp = await fetch(`/server/capital/creator/getRecord/${id}`)
+  const creator_record = creator_resp.json()
+  return await creator_record
+}
+
+const crearNuebaTabla = (json_amortizacion) => {
+  console.log('Creando nueva tabla')
+  const rows = Array.from(tabla.getElementsByTagName('tr'))
+  // console.log(rows)
+  const filterFact = rows.filter((row) => row.cells[5].textContent == 'sent')
+  // console.log(filterFact)
+  filterFact.forEach((row) => {
+    let cells = row.cells
+    // console.log(cells)
+    const consecutivo = row.dataset.consecutivo
+    const factura = json_amortizacion.find((e) => e.Consecutivo == consecutivo)
+    // Actualizar Mensualidad
+    cells[2].textContent = formatPrice.format(factura.Mensualidad)
+    // Actualizar Interes
+    cells[3].textContent = formatPrice.format(factura.Interes)
+    // Actualizar Capital
+    cells[4].textContent = formatPrice.format(factura.Capital)
+  })
+  // console.log(json_amortizacion)
+}
+
+// ###Not used
 const getInfoFromBooks = async () => {
-  const idContacto = '888587000033680404'
-  const idItem = '888587000011266039'
+  const idContacto = record.IDContactoBooks
+  const idItem = record.IDProductoBooks
   const responses = await Promise.all([
     fetch(`/server/capital/books/getContacto/${idContacto}`),
     fetch(`/server/capital/books/getItemById/${idItem}`),
@@ -155,10 +168,13 @@ const getInfoFromBooks = async () => {
 }
 
 const getData = async () => {
-  const resps = await getInfoFromBooks()
-  let customer_name = resps[0].contact.contact_name
-  let item_name = resps[1].name
-  let item_id = resps[1].item_id
+  // const resps = await getInfoFromBooks()
+  // let customer_name = resps[0].contact.contact_name
+  // let item_name = resps[1].name
+  // let item_id = resps[1].item_id
+  let customer_name = record.NombreContacto
+  let item_name = record.Producto
+  let item_id = record.IDProductoBooks
   return [customer_name, item_name, item_id]
 }
 
@@ -202,18 +218,7 @@ const crearFactura = () => {
   }
 }
 
-const creatorRecord = async (record_id) => {
-  // console.log(primerNoPagada)
-  const creator_resp = await fetch(
-    `/server/capital/creator/searchRecord/${record_id}`
-  )
-  const creator_record = creator_resp.json()
-  return await creator_record
-}
-
 const getDatosCreator = async () => {
-  const record = await creatorRecord(39)
-  // console.log(await record)
   let amortizacion = JSON.parse(`[${record.JSON_Amortizacion}]`)
   console.log(amortizacion)
   console.log('Consecutivo actual', consecutivo)
@@ -236,7 +241,7 @@ const actualizarReporte = async () => {
     let nuevoSaldoInicial = datos.saldoInicial - montoCapital
     console.log('nuevo saldo inicial', nuevoSaldoInicial)
     const updateRegistro = fetch(
-      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&Fecha_Inicial=2020-07-09&factura_Inicial=${consecutivo}&factura_Final=${plazo}`
+      `/server/capital/crm/calcularAmortizacion?IDPresupuesto=${datos.id}&Monto_Inicial=${nuevoSaldoInicial}&factura_Inicial=${consecutivo}&factura_Final=${plazo}&Pago_capital=${montoCapital}`
     )
     return await (await updateRegistro).json()
   } catch (error) {
@@ -311,8 +316,47 @@ const creacionInvoices = async (
   }
 }
 
+// Actualizar monto con interes
+const actualizarMontoInteres = async (montoNuevo) => {
+  const myHeaders = new Headers()
+  myHeaders.append('Content-Type', 'application/json')
+
+  const raw = JSON.stringify({
+    monto: montoNuevo,
+  })
+
+  const requestOptions = {
+    method: 'PUT',
+    headers: myHeaders,
+    body: raw,
+  }
+  try {
+    const responses = await Promise.all([
+      fetch(`/server/capital/books/updateMontoItem/${item_id}`, requestOptions),
+      fetch(
+        `/server/capital/crm/updateMontoItem/2234337000028805061`,
+        requestOptions
+      ),
+    ])
+    const dataPromises = responses.map((result) => result.json())
+    const promisesResp = Promise.all(dataPromises)
+    return promisesResp
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+// Get params
+const IDRegistro = urlParams.get('IDRegistro')
 // script
-DatosTabla()
+if (IDRegistro) {
+  const fetchRecord = await getCreatorRecord(IDRegistro)
+  record = fetchRecord.data
+
+  DatosTabla()
+} else {
+  util.showAlert('warning', 'No se puede realizar un pago sin registro')
+}
 
 // Event listeners
 
@@ -329,14 +373,20 @@ submit.addEventListener('click', async (e) => {
 
     if (resp.code == 0) {
       console.log('Actualizo el registro')
+      crearNuebaTabla(resp.data.JSON_Amortizacion)
+      const montoNuevo = resp.data.NewMonto
+      console.log('monto nuevo', montoNuevo)
       let size = resp.data.sizemap
+
+      // Actualizar monto con Interes
+      const updateMontos = await actualizarMontoInteres(montoNuevo)
+      console.log(updateMontos)
 
       // Crear factura
       const invoiceResp = await crearFacturaBooks()
       const invoice_id = invoiceResp.invoice.invoice_id
       util.showAlert('success', JSON.stringify(invoiceResp.message))
 
-      /*
       // Enviar factura
       const enviar = await enviarFactura(invoice_id)
       console.log(enviar)
@@ -349,14 +399,28 @@ submit.addEventListener('click', async (e) => {
 
       // Creacion Masiva
       const creacionMasiva = await creacionInvoices(
-        '2234337000105397015',
-        '888587000033680404',
+        record.IDOportunidad,
+        record.IDContactoBooks,
         item_id,
         id_Creator,
         size
       )
       console.log(creacionMasiva)
       util.showAlert('success', JSON.stringify(creacionMasiva))
+      /*
+       eliminarFacturas()
+        .then((resp) => resp.json())
+        .then((data) =>
+          creacionInvoices(
+            record.IDOportunidad,
+            record.IDContactoBooks,
+            item_id,
+            id_Creator,
+            size
+          )
+            .then((resp) => resp.json())
+            .then((result) => util.showAlert('success', JSON.stringify(result)))
+        )
       */
     }
   } catch (error) {

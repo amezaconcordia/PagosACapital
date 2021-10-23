@@ -239,4 +239,36 @@ router.get('/getContacto/:id', async (req, res) => {
   }
 })
 
+// Actualizar Monto con Interes
+router.put('/updateMontoItem/:item_id', async (req, res) => {
+  // obtener access token
+  const accessToken = await catalystToken(req)
+
+  const { monto } = req.body
+
+  //Config Axios
+  const item_id = req.params.item_id
+
+  const objItem = {
+    custom_fields: [{ label: 'Precio con Interes', value: monto }],
+  }
+
+  const config = {
+    method: 'put',
+    url: `https://books.zoho.com/api/v3/items/${item_id}?organization_id=${process.env.ORGANIZATION_BOOKS}`,
+    headers: {
+      Authorization: `Zoho-oauthtoken ${accessToken}`,
+    },
+    data: objItem,
+  }
+
+  // Realizar peticion con Axios
+  try {
+    const resp = await axios(config)
+    res.send(resp.data)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
 module.exports = router
