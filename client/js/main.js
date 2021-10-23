@@ -407,6 +407,21 @@ submit.addEventListener('click', async (e) => {
       )
       console.log(creacionMasiva)
       util.showAlert('success', JSON.stringify(creacionMasiva))
+      /*
+       eliminarFacturas()
+        .then((resp) => resp.json())
+        .then((data) =>
+          creacionInvoices(
+            record.IDOportunidad,
+            record.IDContactoBooks,
+            item_id,
+            id_Creator,
+            size
+          )
+            .then((resp) => resp.json())
+            .then((result) => util.showAlert('success', JSON.stringify(result)))
+        )
+      */
     }
   } catch (error) {
     console.log(error)
