@@ -24,7 +24,7 @@ router.get('/getRecord/:id', async (req, res) => {
   // Realizar peticion con Axios
   try {
     const resp = await axios(config)
-    res.send(resp.data)
+    res.json(resp.data)
     // console.log(resp.data)
   } catch (error) {
     console.log(error)

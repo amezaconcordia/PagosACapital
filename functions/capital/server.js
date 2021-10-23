@@ -51,7 +51,6 @@ app.post('/login', (req, res) => {
 })
 
 app.post('/encrypt', async (req, res) => {
-  console.log(req.body.password)
   const salt = await bcrypt.genSalt(10)
   const hashPass = await bcrypt.hash(req.body.password, salt)
   res.send(hashPass)
