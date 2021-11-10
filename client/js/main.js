@@ -20,7 +20,16 @@ let primerNoPagada,
   item_id,
   id_Creator,
   consecutivo,
-  plazo
+  plazo,
+  invoices = [],
+  groups = []
+
+function ArrayGroups(arr, size) {
+  var Groups = [], i;
+  for (i = 0; i <= arr.length; i += size)
+    Groups.push(arr.slice(i, i + size));
+  return Groups;
+}
 
 // Function declarations
 const DatosTabla = async () => {
@@ -97,10 +106,23 @@ const DatosTabla = async () => {
                 divEstatus.classList.add('partially-paid')
               } else if (factura.status == 'sent') {
                 divEstatus.classList.add('sent')
+                invoices.push({
+                  id: factura.invoice_id,
+                })
+              } else if (factura.status == 'overdue') {
+                if (factura.balance === factura.total) {
+                  invoices.push({
+                    id: factura.invoice_id,
+                  })
+                }
+
               }
               spanEstado.append(divEstatus)
             }
           })
+
+          groups = ArrayGroups(invoices, 25)
+          console.log(groups)
 
           // Obtener primer no pagada
           primerNoPagada = data.find(
@@ -297,7 +319,7 @@ const creacionInvoices = async (
   cliente,
   producto,
   presupuesto,
-  size
+  position
 ) => {
   try {
     /* 
@@ -308,7 +330,7 @@ const creacionInvoices = async (
         size: req.query.size,
     */
     const creacion = fetch(
-      `/server/capital/crm/creacionMasiva?IDOportunidad=${oportunidad}&IDClienteBooks=${cliente}&IDProductoBooks=${producto}&IDPresupuesto=${presupuesto}&size=${size}`
+      `/server/capital/crm/creacionMasiva?IDOportunidad=${oportunidad}&IDClienteBooks=${cliente}&IDProductoBooks=${producto}&IDPresupuesto=${presupuesto}&position=${position}`
     )
     return await (await creacion).json()
   } catch (error) {
@@ -358,73 +380,103 @@ if (IDRegistro) {
   util.showAlert('warning', 'No se puede realizar un pago sin registro')
 }
 
+// 
+
+const deleteInvoicesList = async () => {
+  try {
+    const eliminar = fetch(
+      `/server/capital/creator/deleteInvoicesList/${IDRegistro}`, {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json', },
+      body: JSON.stringify({ map: groups })
+    }
+    )
+    return await (await eliminar).json()
+  } catch (error) {
+    return error
+  }
+}
+
+const deleteInvoices = async (position) => {
+  try {
+    let eliminar = fetch(`/server/capital/crm/eliminarFacturas2/${IDRegistro}/${position}`)
+    return await (await eliminar).json()
+  } catch (error) {
+    return error
+  }
+}
+
 // Event listeners
 
 submit.addEventListener('click', async (e) => {
   e.preventDefault()
 
   try {
+
     // Actualizar reporte
-    const actualizar = await actualizarReporte()
-    console.log(actualizar)
-    let resp = JSON.parse(actualizar.details.output)
-    console.log(resp)
-    util.showAlert('success', JSON.stringify(resp.data.message))
 
-    if (resp.code == 0) {
-      console.log('Actualizo el registro')
-      crearNuebaTabla(resp.data.JSON_Amortizacion)
-      const montoNuevo = resp.data.NewMonto
-      console.log('monto nuevo', montoNuevo)
-      let size = resp.data.sizemap
+    // const actualizar = await actualizarReporte()
+    // console.log(actualizar)
+    // let resp = JSON.parse(actualizar.details.output)
+    // console.log(resp)
+    // util.showAlert('success', JSON.stringify(resp.data.message))
 
-      // Actualizar monto con Interes
-      const updateMontos = await actualizarMontoInteres(montoNuevo)
-      console.log(updateMontos)
+    // if (resp.code == 0) {
 
-      // Crear factura
-      const invoiceResp = await crearFacturaBooks()
-      const invoice_id = invoiceResp.invoice.invoice_id
-      util.showAlert('success', JSON.stringify(invoiceResp.message))
+    //   // lista Eliminar facturas
+    //   const InvoicesList = await deleteInvoicesList()
+    //   console.log(InvoicesList)
 
-      // Enviar factura
-      const enviar = await enviarFactura(invoice_id)
-      console.log(enviar)
-      util.showAlert('success', JSON.stringify(enviar.message))
 
-      // Eliminar facturas
-      const eliminar = await eliminarFacturas()
-      console.log(eliminar)
-      util.showAlert('success', JSON.stringify(eliminar.details.output))
+    //   // util.showAlert('success', JSON.stringify(InvoicesList.details.output))
 
-      // Creacion Masiva
+    //   console.log('Actualizo el registro')
+    //   crearNuebaTabla(resp.data.JSON_Amortizacion)
+    //   const montoNuevo = resp.data.NewMonto
+    //   console.log('monto nuevo', montoNuevo)
+    //   let size = resp.data.sizemap
+
+    //   // Actualizar monto con Interes
+    //   const updateMontos = await actualizarMontoInteres(montoNuevo)
+    //   console.log(updateMontos)
+
+    //   // Crear factura
+    //   const invoiceResp = await crearFacturaBooks()
+    //   const invoice_id = invoiceResp.invoice.invoice_id
+    //   util.showAlert('success', JSON.stringify(invoiceResp.message))
+
+    //   // Enviar factura
+    //   const enviar = await enviarFactura(invoice_id)
+    //   console.log(enviar)
+    //   util.showAlert('success', JSON.stringify(enviar.message))
+
+    //   // Eliminar facturas
+    //   for(let i = 0; i < groups.length ; i ++){
+    //     console.log("delet")
+    //     const delet = await deleteInvoices(i)
+    //     console.log("delet work !!")
+    //     console.log(delet)
+    //   }
+    // Creacion Masiva
+    var size = 10
+    for (var i = 0; i <= size; i++) {
       const creacionMasiva = await creacionInvoices(
         record.IDOportunidad,
         record.IDContactoBooks,
         item_id,
-        id_Creator,
-        size
+        record.ID,
+        i
       )
+      console.log(i)
       console.log(creacionMasiva)
-      util.showAlert('success', JSON.stringify(creacionMasiva))
-      /*
-       eliminarFacturas()
-        .then((resp) => resp.json())
-        .then((data) =>
-          creacionInvoices(
-            record.IDOportunidad,
-            record.IDContactoBooks,
-            item_id,
-            id_Creator,
-            size
-          )
-            .then((resp) => resp.json())
-            .then((result) => util.showAlert('success', JSON.stringify(result)))
-        )
-      */
     }
+
+
+    // }
   } catch (error) {
     console.log(error)
     util.showAlert('danger', JSON.stringify(error))
   }
 })
+
+
