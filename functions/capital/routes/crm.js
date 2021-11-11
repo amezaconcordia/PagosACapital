@@ -114,10 +114,8 @@ router.get('/eliminarFacturas', async (req, res) => {
   }
 })
 
-
 router.get('/eliminarFacturas2/:id/:position', async (req, res) => {
   try {
-
     const config = {
       method: 'get',
       url: `https://www.zohoapis.com/crm/v2/functions/eliminarFacturasCount/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
@@ -173,10 +171,11 @@ router.get('/creacionMasiva', async (req, res) => {
       },
     }
     const resp = await axios(config)
-    console.log(resp)
-    res.send('Las facturas fueron creadas')
+    console.log(resp.data)
+    res.send({ status: 'ok', message: 'Las facturas fueron creadas' })
   } catch (error) {
-    res.status(500).send(error)
+    console.log(error)
+    res.send({ status: 'failure', message: 'error', reason: error })
   }
 
   // try {

@@ -25,10 +25,10 @@ let primerNoPagada,
   groups = []
 
 function ArrayGroups(arr, size) {
-  var Groups = [], i;
-  for (i = 0; i <= arr.length; i += size)
-    Groups.push(arr.slice(i, i + size));
-  return Groups;
+  var Groups = [],
+    i
+  for (i = 0; i <= arr.length; i += size) Groups.push(arr.slice(i, i + size))
+  return Groups
 }
 
 // Function declarations
@@ -115,7 +115,6 @@ const DatosTabla = async () => {
                     id: factura.invoice_id,
                   })
                 }
-
               }
               spanEstado.append(divEstatus)
             }
@@ -380,16 +379,17 @@ if (IDRegistro) {
   util.showAlert('warning', 'No se puede realizar un pago sin registro')
 }
 
-// 
+//
 
 const deleteInvoicesList = async () => {
   try {
     const eliminar = fetch(
-      `/server/capital/creator/deleteInvoicesList/${IDRegistro}`, {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json', },
-      body: JSON.stringify({ map: groups })
-    }
+      `/server/capital/creator/deleteInvoicesList/${IDRegistro}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ map: groups }),
+      }
     )
     return await (await eliminar).json()
   } catch (error) {
@@ -399,7 +399,9 @@ const deleteInvoicesList = async () => {
 
 const deleteInvoices = async (position) => {
   try {
-    let eliminar = fetch(`/server/capital/crm/eliminarFacturas2/${IDRegistro}/${position}`)
+    let eliminar = fetch(
+      `/server/capital/crm/eliminarFacturas2/${IDRegistro}/${position}`
+    )
     return await (await eliminar).json()
   } catch (error) {
     return error
@@ -412,7 +414,6 @@ submit.addEventListener('click', async (e) => {
   e.preventDefault()
 
   try {
-
     // Actualizar reporte
 
     // const actualizar = await actualizarReporte()
@@ -426,7 +427,6 @@ submit.addEventListener('click', async (e) => {
     //   // lista Eliminar facturas
     //   const InvoicesList = await deleteInvoicesList()
     //   console.log(InvoicesList)
-
 
     //   // util.showAlert('success', JSON.stringify(InvoicesList.details.output))
 
@@ -458,8 +458,9 @@ submit.addEventListener('click', async (e) => {
     //     console.log(delet)
     //   }
     // Creacion Masiva
-    var size = 10
-    for (var i = 0; i <= size; i++) {
+    console.log('creando facturas')
+    let size = 10
+    for (let i = 0; i < size; i++) {
       const creacionMasiva = await creacionInvoices(
         record.IDOportunidad,
         record.IDContactoBooks,
@@ -470,7 +471,15 @@ submit.addEventListener('click', async (e) => {
       console.log(i)
       console.log(creacionMasiva)
     }
-
+    // console.log('Creando segunda lista...')
+    // const creacionFacts = await creacionInvoices(
+    //   record.IDOportunidad,
+    //   record.IDContactoBooks,
+    //   item_id,
+    //   record.ID,
+    //   1
+    // )
+    // console.log(creacionFacts)
 
     // }
   } catch (error) {
@@ -478,5 +487,3 @@ submit.addEventListener('click', async (e) => {
     util.showAlert('danger', JSON.stringify(error))
   }
 })
-
-
