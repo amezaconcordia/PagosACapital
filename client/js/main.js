@@ -33,6 +33,7 @@ function ArrayGroups(arr, size) {
 
 // Function declarations
 const DatosTabla = async () => {
+  console.log('Creando Tabla')
   const data = await getData()
   // let [customer_name, item_name] = data'
   customer_name = data[0]
