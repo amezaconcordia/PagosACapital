@@ -31,6 +31,37 @@ router.get('/getRecord/:id', async (req, res) => {
   }
 })
 
+// agregar registro deleteInvoicesList
+router.post('/deleteInvoicesList/:id', async (req, res) => {
+  // obtener access token
+  const accessToken = await catalystToken(req)
+  // console.log(req.body.map)
+  // Config para axios
+  const idRegistro = req.params.id
+  const updateData = {
+    data: { deleteInvoicesList: req.body.map },
+    result: { fields: ['Single_Line'], message: true, tasks: true },
+  }
+  const config = {
+    method: 'patch',
+    url: `https://creator.zoho.com/api/v2/sistemas134/cotizadorgc/report/Presupuesto_Report/${idRegistro}`,
+    headers: {
+      Authorization: `Zoho-oauthtoken ${accessToken}`,
+    },
+    data: JSON.stringify(updateData),
+  }
+
+  // Realizar peticion con Axios
+  try {
+    // res.end()
+    const resp = await axios(config)
+    res.send(resp.data)
+    //console.log(resp.data)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
 // Modificar 1 registro de reporte Presupuesto
 router.post('/updateRecord/:id', async (req, res) => {
   // obtener access token

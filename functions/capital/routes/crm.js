@@ -107,6 +107,26 @@ router.get('/eliminarFacturas', async (req, res) => {
     }
 
     const resp = await axios(config)
+    console.log(resp.data)
+    res.send(resp.data)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+router.get('/eliminarFacturas2/:id/:position', async (req, res) => {
+  try {
+    const config = {
+      method: 'get',
+      url: `https://www.zohoapis.com/crm/v2/functions/eliminarFacturasCount/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
+      params: {
+        id: req.params.id,
+        position: req.params.position,
+      },
+    }
+
+    const resp = await axios(config)
+    console.log(resp.data)
     res.send(resp.data)
   } catch (error) {
     console.log(error)
@@ -139,26 +159,23 @@ router.get('/calcularAmortizacion', async (req, res) => {
 router.get('/creacionMasiva', async (req, res) => {
   console.log(req.query)
   try {
-    const sizeMap = parseInt(req.query.size)
-    console.log(typeof sizeMap)
-    for (let i = 0; i < sizeMap; i++) {
-      const config = {
-        method: 'get',
-        url: `https://www.zohoapis.com/crm/v2/functions/creacionfacturascapital/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
-        params: {
-          IDOportunidad: req.query.IDOportunidad,
-          IDClienteBooks: req.query.IDClienteBooks,
-          IDProductoBooks: req.query.IDProductoBooks,
-          IDPresupuesto: req.query.IDPresupuesto,
-          Position: i,
-        },
-      }
-      const resp = await axios(config)
-      console.log(resp)
+    const config = {
+      method: 'get',
+      url: `https://www.zohoapis.com/crm/v2/functions/creacionfacturascapital/actions/execute?auth_type=apikey&zapikey=${process.env.CRM_API}`,
+      params: {
+        IDOportunidad: req.query.IDOportunidad,
+        IDClienteBooks: req.query.IDClienteBooks,
+        IDProductoBooks: req.query.IDProductoBooks,
+        IDPresupuesto: req.query.IDPresupuesto,
+        Position: parseInt(req.query.position),
+      },
     }
-    res.send('Las facturas fueron creadas')
+    const resp = await axios(config)
+    console.log(resp.data)
+    res.send({ status: 'ok', message: 'Las facturas fueron creadas' })
   } catch (error) {
-    res.status(500).send(error)
+    console.log(error)
+    res.send({ status: 'failure', message: 'error', reason: error })
   }
 
   // try {
